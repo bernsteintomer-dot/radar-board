@@ -1,6 +1,6 @@
 // Network-first service worker: always tries the network (fresh data), falls back to the last cached copy offline.
 // Only the app shell and the ENCRYPTED data file are cached, so nothing readable is stored on the device.
-const CACHE = 'deal-radar-v1';
+const CACHE = 'deal-radar-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

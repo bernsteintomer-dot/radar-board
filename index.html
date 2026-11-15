@@ -106,6 +106,8 @@ ul.clean{margin:0;padding-inline-start:18px}
 .searchcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
 .searchcard h4{margin:0 0 4px;font-size:17px}
 .md{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:14px}
+.hp{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.copy{border:1px solid var(--line);background:var(--soft);border-radius:6px;font-size:11px;padding:0 6px;cursor:pointer;margin-inline-start:4px}
 .srcs{display:inline-flex;gap:4px;flex-wrap:wrap;margin-inline-start:6px;vertical-align:middle}
 .srcs a{font-size:11px;font-weight:700;text-decoration:none;background:var(--soft);color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:0 6px;line-height:18px;white-space:nowrap}
 .srcs a:hover{border-color:var(--accent)}
@@ -213,6 +215,7 @@ const store = {
 const host = u => { try { return new URL(u).hostname.replace(/^www\./, '').replace(/^maya\.tase\.co\.il$/, 'מאי"ה'); } catch { return 'מקור'; } };
 // small source chips next to a fact; accepts url string, array of urls, or nothing
 const S = v => { const a = (Array.isArray(v) ? v : [v]).filter(safeUrl); return a.length ? `<span class="srcs">${a.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">↗ ${esc(host(u))}</a>`).join('')}</span>` : ''; };
+const MATCH = { exact:['זיהוי מדויק','s-hi'], verified_number:['ח.פ אומת','s-hi'], by_number:['לפי ח.פ','s-hi'], probable:['זיהוי סביר','s-mid'], ambiguous:['לא ודאי – כמה התאמות','s-lo'], number_name_mismatch:['ח.פ לא תואם לשם','s-lo'], not_found:['לא נמצא ברשם','s-lo'], error:['שגיאת בדיקה','s-lo'] };
 const OWN = { private_family:'פרטית משפחתית', private_founder:'פרטית – מייסדים', vc_backed:'מגובת הון סיכון', public_tase:'ציבורית – ת"א', public_other:'ציבורית – אחר', subsidiary:'חברה-בת / חטיבה', other:'אחר' };
 const STATUS = { '':'—', watch:'במעקב', contact:'ליצור קשר', inprogress:'בבדיקה', rejected:'נפסלה' };
 const CONF = { high:'גבוה', medium:'בינוני', low:'נמוך' };
@@ -303,7 +306,7 @@ function render() {
     [all.filter(c => (c.ownership_type || '').startsWith('public')).length, 'ציבוריות'], [DB.searches.length, 'חיפושים']
   ].map(([n, t]) => `<div class="kpi"><b>${n}</b><span>${t}</span></div>`).join('');
   $('#rows').innerHTML = list.map(c => `<tr data-id="${esc(c.id)}">
-    <td><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}</div></td>
+    <td><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}${c.company_number ? ` · ח.פ <span class="hp">${esc(c.company_number)}</span>` : ''}</div></td>
     <td class="hide-sm"><span class="pill tag">${esc(OWN[c.ownership_type] || '—')}</span></td>
     <td class="hide-sm">${esc(c.best_fit_unit || '—')}</td>
     <td class="hide-sm">${esc(revText(c))}</td>
@@ -311,7 +314,7 @@ function render() {
     <td class="hide-sm">${esc(CONF[sc(c).confidence] || '—')}</td>
     <td>${MINE[c.id]?.status ? `<span class="pill tag">${esc(STATUS[MINE[c.id].status])}</span>` : ''}</td></tr>`).join('');
   $('#cards').innerHTML = list.map(c => `<div class="ccard" data-id="${esc(c.id)}">
-    <div><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}</div></div>
+    <div><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}${c.company_number ? ` · ח.פ <span class="hp">${esc(c.company_number)}</span>` : ''}</div></div>
     <div class="big">${scoreCell(sc(c).overall)}</div>
     <div class="sub">${esc(c.best_fit_unit ? 'רוכשת: ' + c.best_fit_unit : '')}</div>
     <div class="meta"><span class="pill tag">${esc(OWN[c.ownership_type] || '—')}</span><span>התאמה ${sc(c).fit ?? '—'}</span><span>· נכונות ${sc(c).readiness ?? '—'}</span><span>· ${esc(revText(c))}</span>${(c.filings_findings || []).length ? '<span class="pill s-mid">ממצאי דוחות</span>' : ''}${MINE[c.id]?.status ? `<span class="pill tag">${esc(STATUS[MINE[c.id].status])}</span>` : ''}</div></div>`).join('');
@@ -337,6 +340,8 @@ function openCard(id) {
   const link = u => safeUrl(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : esc(u);
   $('#dpanel').innerHTML = `<button class="btn ghost close" id="dclose">✕</button>
     <h2>${esc(c.name)}</h2><div style="color:var(--muted)">${esc([c.name_en, OWN[c.ownership_type], c.sector, c.subsector].filter(Boolean).join(' · '))}</div>
+    <div style="margin-top:6px">${c.company_number ? `ח.פ <b class="hp">${esc(c.company_number)}</b><button class="copy" data-copy="${esc(c.company_number)}">העתק</button>` : '<span style="color:var(--muted)">ח.פ לא אותר</span>'}
+      ${c.registry?.match && MATCH[c.registry.match] ? `<span class="pill ${MATCH[c.registry.match][1]}">${MATCH[c.registry.match][0]}</span>` : ''}</div>
     <div class="scores">
       <div><b>${s.overall ?? '—'}</b><span>ציון כולל</span></div><div><b>${s.fit ?? '—'}</b><span>התאמה אסטרטגית</span></div>
       <div><b>${s.readiness ?? '—'}</b><span>נכונות למכור</span></div><div><b>${s.attractiveness ?? '—'}</b><span>אטרקטיביות</span></div>
@@ -352,6 +357,19 @@ function openCard(id) {
     ${(c.sale_signals || []).map(g => `<div class="sig"><span class="pill ${g.strength === 'strong' ? 's-hi' : g.strength === 'medium' ? 's-mid' : 'tag'}">${esc(STR[g.strength] || g.strength || '')}</span> <b>${esc(g.signal)}</b>
       <div class="ev">${esc(g.evidence || '')}${g.date ? ' · ' + esc(g.date) : ''}${safeUrl(g.source) ? ' · ' + link(g.source) : ''}</div></div>`).join('')}
     ${(c.filings_findings || []).length ? `<h3>ממצאים מדוחות כספיים ודיווחים</h3>${c.filings_findings.map(x => `<div class="finding ${esc(x.significance || '')}"><b>${esc(x.finding)}</b>${S(x.url)}<div class="doc">${esc([x.doc, x.date].filter(Boolean).join(' · '))}</div></div>`).join('')}` : ''}
+    ${c.registry ? (() => { const g = c.registry, L = g.liens;
+      return `<h3>רשם החברות${S(g.src || g.src_page)}</h3><dl>
+      ${row('שם רשמי', esc([g.official_name, g.official_name_en].filter(Boolean).join(' / ')))}
+      ${row('ח.פ', g.company_number ? `<span class="hp">${esc(g.company_number)}</span>` : '')}
+      ${row('סוג', esc(g.type || ''))}
+      ${row('סטטוס', g.status ? `<span class="pill ${g.status === 'פעילה' ? 's-hi' : 's-lo'}">${esc(g.status)}</span>${g.sub_status ? ' ' + esc(g.sub_status) : ''}` : '')}
+      ${row('התאגדות', esc(g.incorporated || ''))}
+      ${row('חברה מפרה', g.violating ? `<span class="pill s-lo">${esc(g.violating)}</span>` : (g.company_number ? 'לא' : ''))}
+      ${row('דוח שנתי אחרון', esc(g.last_annual_report || ''))}
+      ${row('כתובת רשומה', esc(g.address || ''))}
+      ${row('שעבודים', L ? `${L.registered} נרשמו · ${L.removed} סולקו${L.last_date ? ' · שינוי אחרון ' + esc(L.last_date) : ''}${S(L.src)}${(L.recent || []).length ? '<br><span style="color:var(--muted);font-size:13px">' + L.recent.map(x => esc(x.type + ' ' + x.date)).join(' · ') + '</span>' : ''}` : '')}
+      ${row('התאמות נוספות', (g.alternatives || []).map(a => `<span class="hp">${esc(a.number)}</span> ${esc(a.name)} (${esc(a.status || '')})`).join('<br>'))}
+      </dl>`; })() : ''}
     <h3>פרטי חברה</h3><dl>
       ${row('אתר', c.website ? link(c.website) : '')}${row('הוקמה', esc(c.founded || ''))}${row('מטה', esc(c.hq || ''))}
       ${row('עובדים', c.employees?.value ? esc(c.employees.value) + basis(c.employees.basis) + (c.employees.source ? ' <span style="color:var(--muted)">(' + esc(c.employees.source) + ')</span>' : '') + S(c.employees.src) : '')}
@@ -374,6 +392,7 @@ function openCard(id) {
     <p style="color:var(--muted);font-size:12px;margin-top:20px">נמצא לראשונה ${esc(c.first_seen || '')} · עודכן ${esc(c.updated || '')}</p>`;
   $('#drawer').classList.remove('hidden');
   const save = () => { MINE[id] = { status:$('#mstatus').value, note:$('#mnote').value }; store.set('mine', MINE); render(); };
+  document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.copy); b.textContent = 'הועתק ✓'; });
   $('#mstatus').onchange = save; $('#mnote').oninput = save;
   $('#dclose').onclick = closeCard;
 }
@@ -382,9 +401,9 @@ $('#drawer .scrim').onclick = closeCard;
 addEventListener('keydown', e => { if (e.key === 'Escape') closeCard(); });
 
 $('#exportbtn').onclick = () => {
-  const cols = ['name','name_en','ownership_type','sector','subsector','hq','website','best_fit_unit','revenue','fit','readiness','overall','confidence','status','note'];
+  const cols = ['name','name_en','company_number','registry_status','ownership_type','sector','subsector','hq','website','best_fit_unit','revenue','fit','readiness','overall','confidence','status','note'];
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const lines = [cols.join(',')].concat(filtered().map(c => [c.name, c.name_en, OWN[c.ownership_type], c.sector, c.subsector, c.hq, c.website, c.best_fit_unit, revText(c),
+  const lines = [cols.join(',')].concat(filtered().map(c => [c.name, c.name_en, c.company_number, c.registry?.status, OWN[c.ownership_type], c.sector, c.subsector, c.hq, c.website, c.best_fit_unit, revText(c),
     sc(c).fit, sc(c).readiness, sc(c).overall, CONF[sc(c).confidence], STATUS[MINE[c.id]?.status || ''], MINE[c.id]?.note].map(q).join(',')));
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Deal Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8;--panel:#fff;--ink:#141821;--muted:#5d6675;--line:#e3e6eb;--soft:#eef1f5;
+  --accent:#1f5eff;--accent-ink:#fff;--good:#14804a;--mid:#b26b00;--bad:#c2312f;
+  --good-bg:#e5f5ec;--mid-bg:#fdf1de;--bad-bg:#fbe7e6;--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1218;--panel:#171b23;--ink:#e8ebf0;--muted:#9aa3b2;--line:#283040;--soft:#1e2430;
+  --accent:#5b8cff;--accent-ink:#0b0e14;--good:#46c486;--mid:#f0a640;--bad:#ff6b66;
+  --good-bg:#14301f;--mid-bg:#33260f;--bad-bg:#3a1716;--shadow:none}}
+:root[data-theme="dark"]{
+  --bg:#0f1218;--panel:#171b23;--ink:#e8ebf0;--muted:#9aa3b2;--line:#283040;--soft:#1e2430;
+  --accent:#5b8cff;--accent-ink:#0b0e14;--good:#46c486;--mid:#f0a640;--bad:#ff6b66;
+  --good-bg:#14301f;--mid-bg:#33260f;--bad-bg:#3a1716;--shadow:none}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Assistant,system-ui,sans-serif;font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.hidden{display:none!important}
+
+/* lock */
+#lock{min-height:100vh;display:grid;place-items:center;padding:16px}
+.lockbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 28px;width:100%;max-width:380px;text-align:center}
+.lockbox h1{margin:0 0 4px;font-size:26px;letter-spacing:-.3px}
+.lockbox p{margin:0 0 20px;color:var(--muted)}
+.lockbox input[type=password]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft);direction:ltr;text-align:center;letter-spacing:1px}
+.lockbox label{display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0 16px;color:var(--muted);font-size:14px}
+.btn{border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:var(--accent-ink);font-weight:700;cursor:pointer}
+.btn.ghost{background:var(--soft);color:var(--ink);font-weight:600}
+.btn.wide{width:100%;padding:12px}
+.err{color:var(--bad);min-height:22px;margin-top:10px;font-size:14px}
+
+/* app */
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar{max-width:1280px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:800;font-size:20px;letter-spacing:-.3px;margin-inline-end:auto}
+.brand small{font-weight:600;color:var(--muted);font-size:13px;margin-inline-start:8px}
+main{max-width:1280px;margin:0 auto;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:13px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters input,.filters select{padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);min-width:0}
+.filters input[type=search]{flex:1 1 220px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:600;font-size:14px}
+.tab[aria-selected=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:860px}
+th,td{padding:10px 12px;text-align:start;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:700;cursor:pointer;white-space:nowrap;user-select:none;background:var(--panel);position:sticky;top:0}
+th[data-sort]::after{content:"";margin-inline-start:4px}
+th.asc::after{content:"▲"} th.desc::after{content:"▼"}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--soft)}
+td .nm{font-weight:700}
+td .sub{color:var(--muted);font-size:13px}
+.num{font-variant-numeric:tabular-nums;text-align:center}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.s-hi{background:var(--good-bg);color:var(--good)} .s-mid{background:var(--mid-bg);color:var(--mid)} .s-lo{background:var(--bad-bg);color:var(--bad)}
+.tag{background:var(--soft);color:var(--muted)}
+.score{display:inline-grid;place-items:center;min-width:38px;padding:3px 6px;border-radius:8px;font-weight:800;font-variant-numeric:tabular-nums}
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.empty code{background:var(--soft);padding:2px 6px;border-radius:6px;direction:ltr;display:inline-block}
+
+/* drawer */
+#drawer{position:fixed;inset:0;z-index:20;display:flex;justify-content:flex-start}
+#drawer .scrim{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+#drawer .panel{position:relative;background:var(--panel);width:min(720px,100%);height:100%;overflow:auto;box-shadow:var(--shadow);padding:20px 22px 40px}
+.panel h2{margin:0;font-size:24px;letter-spacing:-.3px}
+.panel h3{font-size:15px;margin:22px 0 8px;color:var(--muted);text-transform:none}
+.panel .close{position:absolute;inset-inline-end:16px;top:16px}
+.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.scores div{background:var(--soft);border-radius:10px;padding:8px;text-align:center}
+.scores b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.scores span{font-size:12px;color:var(--muted)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0}
+dt{color:var(--muted)} dd{margin:0}
+.sig{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px}
+.sig .ev{color:var(--muted);font-size:14px}
+ul.clean{margin:0;padding-inline-start:18px}
+.src a{word-break:break-all}
+.basis{font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;margin-inline-start:6px}
+.basis.reported{background:var(--good-bg);color:var(--good)} .basis.estimate{background:var(--mid-bg);color:var(--mid)}
+.mine{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mine select,.mine textarea{border:1px solid var(--line);border-radius:9px;background:var(--soft);padding:8px}
+.mine textarea{width:100%;min-height:70px}
+.searchcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.searchcard h4{margin:0 0 4px;font-size:17px}
+.md{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:14px}
+@media (max-width:720px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .scores{grid-template-columns:repeat(2,1fr)}
+  table{min-width:0} .hide-sm{display:none}
+  th,td{padding:9px 8px}
+}
+</style>
+</head>
+<body>
+
+<section id="lock">
+  <form class="lockbox" id="lockform" autocomplete="off">
+    <h1>Deal Radar</h1>
+    <p>מערכת איתור חברות למיזוגים ורכישות</p>
+    <input type="password" id="pw" placeholder="סיסמה" autofocus>
+    <label><input type="checkbox" id="remember" checked> לזכור במכשיר הזה</label>
+    <button class="btn wide" id="unlockbtn">כניסה</button>
+    <div class="err" id="err"></div>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header><div class="bar">
+    <div class="brand">Deal Radar <small id="updated"></small></div>
+    <button class="btn ghost" id="themebtn" title="מצב תצוגה">◐</button>
+    <button class="btn ghost" id="exportbtn">ייצוא CSV</button>
+    <button class="btn ghost" id="lockbtn">נעילה</button>
+  </div></header>
+  <main>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-view="companies" aria-selected="true">חברות</button>
+      <button class="tab" role="tab" data-view="searches" aria-selected="false">חיפושים</button>
+      <button class="tab" role="tab" data-view="acquirer" aria-selected="false">פרופיל הקבוצה</button>
+    </div>
+
+    <section id="v-companies">
+      <div class="filters">
+        <input type="search" id="q" placeholder="חיפוש חופשי: שם, תחום, אנשים, תיאור…">
+        <select id="f-search"><option value="">כל החיפושים</option></select>
+        <select id="f-type"><option value="">כל סוגי הבעלות</option></select>
+        <select id="f-status"><option value="">כל הסטטוסים</option></select>
+        <select id="f-min"><option value="0">כל הציונים</option><option value="5">ציון 5+</option><option value="6">ציון 6+</option><option value="7">ציון 7+</option><option value="8">ציון 8+</option></select>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr>
+          <th data-sort="name">חברה</th>
+          <th data-sort="ownership_type" class="hide-sm">בעלות</th>
+          <th data-sort="best_fit_unit" class="hide-sm">רוכשת מתאימה</th>
+          <th data-sort="revenue" class="hide-sm">הכנסות</th>
+          <th data-sort="fit" class="num">התאמה</th>
+          <th data-sort="readiness" class="num">נכונות</th>
+          <th data-sort="overall" class="num desc">ציון</th>
+          <th data-sort="confidence" class="hide-sm">ביטחון</th>
+          <th data-sort="status">סטטוס</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty hidden" id="empty"></div></div>
+    </section>
+
+    <section id="v-searches" class="hidden"></section>
+    <section id="v-acquirer" class="hidden"><div class="md" id="acq"></div></section>
+  </main>
+</div>
+
+<div id="drawer" class="hidden"><div class="scrim"></div><div class="panel" id="dpanel"></div></div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : null;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('dr.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem('dr.' + k); } catch {} }
+};
+const OWN = { private_family:'פרטית משפחתית', private_founder:'פרטית – מייסדים', vc_backed:'מגובת הון סיכון', public_tase:'ציבורית – ת"א', public_other:'ציבורית – אחר', subsidiary:'חברה-בת / חטיבה', other:'אחר' };
+const STATUS = { '':'—', watch:'במעקב', contact:'ליצור קשר', inprogress:'בבדיקה', rejected:'נפסלה' };
+const CONF = { high:'גבוה', medium:'בינוני', low:'נמוך' };
+const STR = { strong:'חזק', medium:'בינוני', weak:'חלש' };
+
+// theme
+const applyTheme = t => { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; };
+applyTheme(store.get('theme', null));
+$('#themebtn').onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const nx = cur === 'dark' ? 'light' : 'dark'; applyTheme(nx); store.set('theme', nx);
+};
+
+// crypto
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(enc, pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name:'PBKDF2', salt:b64(enc.salt), iterations:enc.iter, hash:'SHA-256' }, base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  let buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(enc.iv) }, key, b64(enc.ct));
+  if (enc.gzip) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+let ENC = null;
+async function loadEnc() {
+  if (!ENC) { const r = await fetch('data.enc.json?t=' + Date.now(), { cache:'no-store' }); if (!r.ok) throw new Error('fetch'); ENC = await r.json(); }
+  return ENC;
+}
+async function unlock(pw, remember) {
+  $('#err').textContent = 'פותח…';
+  try {
+    const db = await decrypt(await loadEnc(), pw);
+    if (remember) store.set('pw', pw); else store.del('pw');
+    $('#err').textContent = '';
+    start(db);
+  } catch (e) {
+    store.del('pw');
+    $('#err').textContent = e.message === 'fetch' ? 'לא ניתן לטעון את הנתונים' : 'סיסמה שגויה';
+  }
+}
+$('#lockform').onsubmit = e => { e.preventDefault(); unlock($('#pw').value.trim(), $('#remember').checked); };
+$('#lockbtn').onclick = () => { store.del('pw'); location.reload(); };
+const saved = store.get('pw', null); if (saved) unlock(saved, true);
+
+// app
+let DB, MINE, sortKey = 'overall', sortDir = -1;
+function start(db) {
+  DB = db; MINE = store.get('mine', {});
+  $('#lock').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#updated').textContent = db.updated ? 'עודכן ' + new Date(db.updated).toLocaleDateString('he-IL') : '';
+  const sel = (id, entries) => { const el = $(id); for (const [v, t] of entries) el.insertAdjacentHTML('beforeend', `<option value="${esc(v)}">${esc(t)}</option>`); };
+  sel('#f-search', [...db.searches].reverse().map(s => [s.id, `${s.query} (${s.date})`]));
+  sel('#f-type', Object.entries(OWN).filter(([k]) => db.companies.some(c => c.ownership_type === k)));
+  sel('#f-status', Object.entries(STATUS).filter(([k]) => k));
+  ['#q','#f-search','#f-type','#f-status','#f-min'].forEach(s => $(s).addEventListener('input', render));
+  document.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => {
+    const k = th.dataset.sort; sortDir = sortKey === k ? -sortDir : (['name','ownership_type','best_fit_unit','status'].includes(k) ? 1 : -1); sortKey = k;
+    document.querySelectorAll('th').forEach(t => t.classList.remove('asc','desc')); th.classList.add(sortDir > 0 ? 'asc' : 'desc'); render();
+  });
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t));
+    ['companies','searches','acquirer'].forEach(v => $('#v-' + v).classList.toggle('hidden', v !== t.dataset.view));
+  });
+  renderSearches();
+  $('#acq').textContent = db.acquirer_md || 'עדיין אין פרופיל קבוצה.';
+  render();
+}
+const sc = c => c.scores || {};
+const rev = c => { const r = c.financials?.revenue; if (!r?.value) return null; return r.unit?.includes('USD') ? r.value * 3.7 : r.value; };
+const revText = c => { const r = c.financials?.revenue; if (!r?.value) return '—'; return `${r.value} ${(r.unit || '').replace('M ', 'מ׳ ').replace('ILS','₪').replace('USD','$')}${r.basis === 'estimate' ? ' ~' : ''}`; };
+const cls = v => v >= 7 ? 's-hi' : v >= 5 ? 's-mid' : 's-lo';
+const scoreCell = v => v == null ? '—' : `<span class="score ${cls(v)}">${(+v).toFixed(v % 1 ? 1 : 0)}</span>`;
+const val = (c, k) => ({ name:c.name, ownership_type:OWN[c.ownership_type] || '', best_fit_unit:c.best_fit_unit || '', revenue:rev(c) ?? -1,
+  fit:sc(c).fit ?? -1, readiness:sc(c).readiness ?? -1, overall:sc(c).overall ?? -1, confidence:{high:3,medium:2,low:1}[sc(c).confidence] || 0, status:STATUS[MINE[c.id]?.status || ''] })[k];
+
+function filtered() {
+  const q = $('#q').value.trim().toLowerCase(), fs = $('#f-search').value, ft = $('#f-type').value, fst = $('#f-status').value, fm = +$('#f-min').value;
+  return DB.companies.filter(c =>
+    (!q || JSON.stringify(c).toLowerCase().includes(q) || (MINE[c.id]?.note || '').toLowerCase().includes(q)) &&
+    (!fs || (c.search_ids || []).includes(fs)) && (!ft || c.ownership_type === ft) &&
+    (!fst || (MINE[c.id]?.status || '') === fst) && ((sc(c).overall ?? 0) >= fm)
+  ).sort((a, b) => { const x = val(a, sortKey), y = val(b, sortKey); return (typeof x === 'string' ? x.localeCompare(y, 'he') : x - y) * sortDir; });
+}
+function render() {
+  const list = filtered();
+  const all = DB.companies;
+  $('#kpis').innerHTML = [
+    [all.length, 'חברות במאגר'], [all.filter(c => (sc(c).overall ?? 0) >= 7).length, 'ציון 7 ומעלה'],
+    [all.filter(c => (c.ownership_type || '').startsWith('public')).length, 'ציבוריות'], [DB.searches.length, 'חיפושים']
+  ].map(([n, t]) => `<div class="kpi"><b>${n}</b><span>${t}</span></div>`).join('');
+  $('#rows').innerHTML = list.map(c => `<tr data-id="${esc(c.id)}">
+    <td><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}</div></td>
+    <td class="hide-sm"><span class="pill tag">${esc(OWN[c.ownership_type] || '—')}</span></td>
+    <td class="hide-sm">${esc(c.best_fit_unit || '—')}</td>
+    <td class="hide-sm">${esc(revText(c))}</td>
+    <td class="num">${scoreCell(sc(c).fit)}</td><td class="num">${scoreCell(sc(c).readiness)}</td><td class="num">${scoreCell(sc(c).overall)}</td>
+    <td class="hide-sm">${esc(CONF[sc(c).confidence] || '—')}</td>
+    <td>${MINE[c.id]?.status ? `<span class="pill tag">${esc(STATUS[MINE[c.id].status])}</span>` : ''}</td></tr>`).join('');
+  const empty = $('#empty');
+  empty.classList.toggle('hidden', list.length > 0);
+  empty.innerHTML = all.length ? 'אין חברות שתואמות לסינון.' : 'המאגר עדיין ריק.<br>כדי להתחיל, כתוב ב-Claude Code: <code>/scout שם התחום</code>';
+  document.querySelectorAll('#rows tr').forEach(tr => tr.onclick = () => openCard(tr.dataset.id));
+}
+function renderSearches() {
+  const s = [...DB.searches].reverse();
+  $('#v-searches').innerHTML = s.length ? s.map(x => `<div class="searchcard"><h4>${esc(x.query)}</h4>
+    <div class="sub" style="color:var(--muted)">${esc(x.date)} · ${(x.company_ids || []).length} חברות${x.goal ? ' · מטרה: ' + esc(x.goal) : ''}</div>
+    <p>${esc(x.summary || '')}</p><button class="btn ghost" data-s="${esc(x.id)}">הצג חברות</button></div>`).join('')
+    : '<div class="empty">עדיין לא בוצעו חיפושים.</div>';
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { $('#f-search').value = b.dataset.s; document.querySelector('[data-view=companies]').click(); render(); });
+}
+function openCard(id) {
+  const c = DB.companies.find(x => x.id === id); if (!c) return;
+  const f = c.financials || {}, p = f.public || {}, s = sc(c), m = MINE[id] || {};
+  const basis = b => b ? `<span class="basis ${b === 'reported' ? 'reported' : 'estimate'}">${b === 'reported' ? 'מדווח' : 'הערכה'}</span>` : '';
+  const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
+  const link = u => safeUrl(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : esc(u);
+  $('#dpanel').innerHTML = `<button class="btn ghost close" id="dclose">✕</button>
+    <h2>${esc(c.name)}</h2><div style="color:var(--muted)">${esc([c.name_en, OWN[c.ownership_type], c.sector, c.subsector].filter(Boolean).join(' · '))}</div>
+    <div class="scores">
+      <div><b>${s.overall ?? '—'}</b><span>ציון כולל</span></div><div><b>${s.fit ?? '—'}</b><span>התאמה אסטרטגית</span></div>
+      <div><b>${s.readiness ?? '—'}</b><span>נכונות למכור</span></div><div><b>${s.attractiveness ?? '—'}</b><span>אטרקטיביות</span></div>
+    </div>
+    <div style="margin-top:8px;color:var(--muted);font-size:13px">רמת ביטחון בנתונים: <b>${esc(CONF[s.confidence] || '—')}</b></div>
+    <div class="mine">
+      <select id="mstatus">${Object.entries(STATUS).map(([k, t]) => `<option value="${k}" ${m.status === k ? 'selected' : ''}>${k ? t : 'סטטוס…'}</option>`).join('')}</select>
+      <textarea id="mnote" placeholder="הערות אישיות (נשמרות במכשיר הזה בלבד)">${esc(m.note || '')}</textarea>
+    </div>
+    <h3>תקציר</h3><p>${esc(c.description || '—')}</p>
+    <h3>התאמה אסטרטגית${c.best_fit_unit ? ' – ' + esc(c.best_fit_unit) : ''}</h3><p>${esc(c.fit_rationale || '—')}</p>
+    <h3>נכונות למכור</h3><p>${esc(c.readiness_rationale || '—')}</p>
+    ${(c.sale_signals || []).map(g => `<div class="sig"><span class="pill ${g.strength === 'strong' ? 's-hi' : g.strength === 'medium' ? 's-mid' : 'tag'}">${esc(STR[g.strength] || g.strength || '')}</span> <b>${esc(g.signal)}</b>
+      <div class="ev">${esc(g.evidence || '')}${g.date ? ' · ' + esc(g.date) : ''}${safeUrl(g.source) ? ' · ' + link(g.source) : ''}</div></div>`).join('')}
+    <h3>פרטי חברה</h3><dl>
+      ${row('אתר', c.website ? link(c.website) : '')}${row('הוקמה', esc(c.founded || ''))}${row('מטה', esc(c.hq || ''))}
+      ${row('עובדים', c.employees?.value ? esc(c.employees.value) + basis(c.employees.basis) + (c.employees.source ? ' <span style="color:var(--muted)">(' + esc(c.employees.source) + ')</span>' : '') : '')}
+      ${row('לקוחות', esc(c.customers || ''))}
+      ${row('אנשי מפתח', (c.people || []).map(x => `<b>${esc(x.name)}</b> – ${esc(x.role || '')}${x.notes ? ' <span style="color:var(--muted)">(' + esc(x.notes) + ')</span>' : ''}`).join('<br>'))}
+    </dl>
+    <h3>נתונים פיננסיים</h3><dl>
+      ${row('הכנסות', f.revenue?.value ? `${esc(f.revenue.value)} ${esc(f.revenue.unit || '')} (${esc(f.revenue.year || '')})${basis(f.revenue.basis)}${f.revenue.method ? '<br><span style="color:var(--muted);font-size:13px">' + esc(f.revenue.method) + '</span>' : ''}` : '')}
+      ${row('רווחיות', esc(f.profitability || ''))}
+      ${row('מימון', f.funding ? esc([f.funding.total && 'סה"כ ' + f.funding.total, f.funding.last_round, f.funding.last_date, (f.funding.investors || []).join(', ')].filter(Boolean).join(' · ')) : '')}
+      ${row('סימול', esc(p.ticker || ''))}${row('שווי שוק', esc(p.market_cap || ''))}${row('הון עצמי', esc(p.equity || ''))}
+      ${row('מכפיל הון', esc(p.p_to_book ?? ''))}${row('מחזור מסחר יומי', esc(p.avg_daily_turnover || ''))}
+      ${row('בעל שליטה', esc([p.controlling_holder, p.holder_stake].filter(Boolean).join(' – ')))}
+      ${row('הערכת שווי', f.valuation_estimate?.range ? esc(f.valuation_estimate.range) + basis('estimate') + '<br><span style="color:var(--muted);font-size:13px">' + esc(f.valuation_estimate.method || '') + '</span>' : '')}
+    </dl>
+    ${(c.risks || []).length ? `<h3>סיכונים</h3><ul class="clean">${c.risks.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+    ${(c.next_steps || []).length ? `<h3>צעדים הבאים</h3><ul class="clean">${c.next_steps.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
+    <h3>מקורות</h3><ul class="clean src">${(c.sources || []).map(x => `<li>${esc(x.title || '')}${x.date ? ' (' + esc(x.date) + ')' : ''} ${safeUrl(x.url) ? '– ' + link(x.url) : ''}</li>`).join('') || '<li>—</li>'}</ul>
+    <p style="color:var(--muted);font-size:12px;margin-top:20px">נמצא לראשונה ${esc(c.first_seen || '')} · עודכן ${esc(c.updated || '')}</p>`;
+  $('#drawer').classList.remove('hidden');
+  const save = () => { MINE[id] = { status:$('#mstatus').value, note:$('#mnote').value }; store.set('mine', MINE); render(); };
+  $('#mstatus').onchange = save; $('#mnote').oninput = save;
+  $('#dclose').onclick = closeCard;
+}
+const closeCard = () => $('#drawer').classList.add('hidden');
+$('#drawer .scrim').onclick = closeCard;
+addEventListener('keydown', e => { if (e.key === 'Escape') closeCard(); });
+
+$('#exportbtn').onclick = () => {
+  const cols = ['name','name_en','ownership_type','sector','subsector','hq','website','best_fit_unit','revenue','fit','readiness','overall','confidence','status','note'];
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const lines = [cols.join(',')].concat(filtered().map(c => [c.name, c.name_en, OWN[c.ownership_type], c.sector, c.subsector, c.hq, c.website, c.best_fit_unit, revText(c),
+    sc(c).fit, sc(c).readiness, sc(c).overall, CONF[sc(c).confidence], STATUS[MINE[c.id]?.status || ''], MINE[c.id]?.note].map(q).join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));
+  a.download = 'deal-radar.csv'; a.click();
+};
+})();
+</script>
+</body>
+</html>

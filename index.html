@@ -2,9 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Deal Radar</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1218">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Deal Radar">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -98,7 +106,30 @@ ul.clean{margin:0;padding-inline-start:18px}
 .searchcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
 .searchcard h4{margin:0 0 4px;font-size:17px}
 .md{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:14px}
+.srcs{display:inline-flex;gap:4px;flex-wrap:wrap;margin-inline-start:6px;vertical-align:middle}
+.srcs a{font-size:11px;font-weight:700;text-decoration:none;background:var(--soft);color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:0 6px;line-height:18px;white-space:nowrap}
+.srcs a:hover{border-color:var(--accent)}
+.finding{border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:10px;padding:8px 10px;margin-bottom:6px}
+.finding.high{border-inline-start-color:var(--bad)} .finding.medium{border-inline-start-color:var(--mid)}
+.finding .doc{color:var(--muted);font-size:13px}
+ol.src{margin:0;padding-inline-start:22px} ol.src li{margin-bottom:4px}
+#cards{display:none}
+.ccard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;cursor:pointer}
+.ccard .nm{font-weight:700;font-size:16px}
+.ccard .sub{color:var(--muted);font-size:13px}
+.ccard .big{grid-row:1/3;grid-column:2;align-self:center}
+.ccard .big .score{font-size:20px;min-width:52px;padding:8px}
+.ccard .meta{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+#installtip{position:fixed;inset-inline:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:30;background:var(--ink);color:var(--panel);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow);font-size:14px}
+#installtip button{background:transparent;border:0;color:inherit;font-size:18px;cursor:pointer}
+header{padding-top:env(safe-area-inset-top)}
+main{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
 @media (max-width:720px){
+  .tablewrap{display:none}
+  #cards{display:block}
+  .brand small{display:none}
+  .bar .btn.ghost{padding:8px 10px}
+  #drawer .panel{padding-top:calc(20px + env(safe-area-inset-top))}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .scores{grid-template-columns:repeat(2,1fr)}
   table{min-width:0} .hide-sm{display:none}
@@ -156,7 +187,9 @@ ul.clean{margin:0;padding-inline-start:18px}
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
-      <div class="empty hidden" id="empty"></div></div>
+      </div>
+      <div id="cards"></div>
+      <div class="empty hidden" id="empty"></div>
     </section>
 
     <section id="v-searches" class="hidden"></section>
@@ -164,6 +197,7 @@ ul.clean{margin:0;padding-inline-start:18px}
   </main>
 </div>
 
+<div id="installtip" class="hidden"><span>להתקנה כאפליקציה: לחצו על <b>שיתוף</b> ⬆︎ ואז <b>"הוסף למסך הבית"</b></span><button id="tipclose" aria-label="סגירה">✕</button></div>
 <div id="drawer" class="hidden"><div class="scrim"></div><div class="panel" id="dpanel"></div></div>
 
 <script>
@@ -176,6 +210,9 @@ const store = {
   set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch {} },
   del(k) { try { localStorage.removeItem('dr.' + k); } catch {} }
 };
+const host = u => { try { return new URL(u).hostname.replace(/^www\./, '').replace(/^maya\.tase\.co\.il$/, 'מאי"ה'); } catch { return 'מקור'; } };
+// small source chips next to a fact; accepts url string, array of urls, or nothing
+const S = v => { const a = (Array.isArray(v) ? v : [v]).filter(safeUrl); return a.length ? `<span class="srcs">${a.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">↗ ${esc(host(u))}</a>`).join('')}</span>` : ''; };
 const OWN = { private_family:'פרטית משפחתית', private_founder:'פרטית – מייסדים', vc_backed:'מגובת הון סיכון', public_tase:'ציבורית – ת"א', public_other:'ציבורית – אחר', subsidiary:'חברה-בת / חטיבה', other:'אחר' };
 const STATUS = { '':'—', watch:'במעקב', contact:'ליצור קשר', inprogress:'בבדיקה', rejected:'נפסלה' };
 const CONF = { high:'גבוה', medium:'בינוני', low:'נמוך' };
@@ -273,6 +310,12 @@ function render() {
     <td class="num">${scoreCell(sc(c).fit)}</td><td class="num">${scoreCell(sc(c).readiness)}</td><td class="num">${scoreCell(sc(c).overall)}</td>
     <td class="hide-sm">${esc(CONF[sc(c).confidence] || '—')}</td>
     <td>${MINE[c.id]?.status ? `<span class="pill tag">${esc(STATUS[MINE[c.id].status])}</span>` : ''}</td></tr>`).join('');
+  $('#cards').innerHTML = list.map(c => `<div class="ccard" data-id="${esc(c.id)}">
+    <div><div class="nm">${esc(c.name)}</div><div class="sub">${esc([c.subsector || c.sector, c.hq].filter(Boolean).join(' · '))}</div></div>
+    <div class="big">${scoreCell(sc(c).overall)}</div>
+    <div class="sub">${esc(c.best_fit_unit ? 'רוכשת: ' + c.best_fit_unit : '')}</div>
+    <div class="meta"><span class="pill tag">${esc(OWN[c.ownership_type] || '—')}</span><span>התאמה ${sc(c).fit ?? '—'}</span><span>· נכונות ${sc(c).readiness ?? '—'}</span><span>· ${esc(revText(c))}</span>${(c.filings_findings || []).length ? '<span class="pill s-mid">ממצאי דוחות</span>' : ''}${MINE[c.id]?.status ? `<span class="pill tag">${esc(STATUS[MINE[c.id].status])}</span>` : ''}</div></div>`).join('');
+  document.querySelectorAll('.ccard').forEach(el => el.onclick = () => openCard(el.dataset.id));
   const empty = $('#empty');
   empty.classList.toggle('hidden', list.length > 0);
   empty.innerHTML = all.length ? 'אין חברות שתואמות לסינון.' : 'המאגר עדיין ריק.<br>כדי להתחיל, כתוב ב-Claude Code: <code>/scout שם התחום</code>';
@@ -303,29 +346,31 @@ function openCard(id) {
       <select id="mstatus">${Object.entries(STATUS).map(([k, t]) => `<option value="${k}" ${m.status === k ? 'selected' : ''}>${k ? t : 'סטטוס…'}</option>`).join('')}</select>
       <textarea id="mnote" placeholder="הערות אישיות (נשמרות במכשיר הזה בלבד)">${esc(m.note || '')}</textarea>
     </div>
-    <h3>תקציר</h3><p>${esc(c.description || '—')}</p>
+    <h3>תקציר</h3><p>${esc(c.description || '—')}${S(c.description_src)}</p>
     <h3>התאמה אסטרטגית${c.best_fit_unit ? ' – ' + esc(c.best_fit_unit) : ''}</h3><p>${esc(c.fit_rationale || '—')}</p>
     <h3>נכונות למכור</h3><p>${esc(c.readiness_rationale || '—')}</p>
     ${(c.sale_signals || []).map(g => `<div class="sig"><span class="pill ${g.strength === 'strong' ? 's-hi' : g.strength === 'medium' ? 's-mid' : 'tag'}">${esc(STR[g.strength] || g.strength || '')}</span> <b>${esc(g.signal)}</b>
       <div class="ev">${esc(g.evidence || '')}${g.date ? ' · ' + esc(g.date) : ''}${safeUrl(g.source) ? ' · ' + link(g.source) : ''}</div></div>`).join('')}
+    ${(c.filings_findings || []).length ? `<h3>ממצאים מדוחות כספיים ודיווחים</h3>${c.filings_findings.map(x => `<div class="finding ${esc(x.significance || '')}"><b>${esc(x.finding)}</b>${S(x.url)}<div class="doc">${esc([x.doc, x.date].filter(Boolean).join(' · '))}</div></div>`).join('')}` : ''}
     <h3>פרטי חברה</h3><dl>
       ${row('אתר', c.website ? link(c.website) : '')}${row('הוקמה', esc(c.founded || ''))}${row('מטה', esc(c.hq || ''))}
-      ${row('עובדים', c.employees?.value ? esc(c.employees.value) + basis(c.employees.basis) + (c.employees.source ? ' <span style="color:var(--muted)">(' + esc(c.employees.source) + ')</span>' : '') : '')}
-      ${row('לקוחות', esc(c.customers || ''))}
-      ${row('אנשי מפתח', (c.people || []).map(x => `<b>${esc(x.name)}</b> – ${esc(x.role || '')}${x.notes ? ' <span style="color:var(--muted)">(' + esc(x.notes) + ')</span>' : ''}`).join('<br>'))}
+      ${row('עובדים', c.employees?.value ? esc(c.employees.value) + basis(c.employees.basis) + (c.employees.source ? ' <span style="color:var(--muted)">(' + esc(c.employees.source) + ')</span>' : '') + S(c.employees.src) : '')}
+      ${row('לקוחות', c.customers ? esc(c.customers) + S(c.customers_src) : '')}
+      ${row('אנשי מפתח', (c.people || []).map(x => `<b>${esc(x.name)}</b> – ${esc(x.role || '')}${x.notes ? ' <span style="color:var(--muted)">(' + esc(x.notes) + ')</span>' : ''}${S(x.src)}`).join('<br>'))}
     </dl>
     <h3>נתונים פיננסיים</h3><dl>
-      ${row('הכנסות', f.revenue?.value ? `${esc(f.revenue.value)} ${esc(f.revenue.unit || '')} (${esc(f.revenue.year || '')})${basis(f.revenue.basis)}${f.revenue.method ? '<br><span style="color:var(--muted);font-size:13px">' + esc(f.revenue.method) + '</span>' : ''}` : '')}
-      ${row('רווחיות', esc(f.profitability || ''))}
-      ${row('מימון', f.funding ? esc([f.funding.total && 'סה"כ ' + f.funding.total, f.funding.last_round, f.funding.last_date, (f.funding.investors || []).join(', ')].filter(Boolean).join(' · ')) : '')}
+      ${row('הכנסות', f.revenue?.value ? `${esc(f.revenue.value)} ${esc(f.revenue.unit || '')} (${esc(f.revenue.year || '')})${basis(f.revenue.basis)}${S(f.revenue.src)}${f.revenue.method ? '<br><span style="color:var(--muted);font-size:13px">' + esc(f.revenue.method) + '</span>' : ''}` : '')}
+      ${row('רווחיות', f.profitability ? esc(f.profitability) + S(f.profitability_src) : '')}
+      ${row('מימון', f.funding ? esc([f.funding.total && 'סה"כ ' + f.funding.total, f.funding.last_round, f.funding.last_date, (f.funding.investors || []).join(', ')].filter(Boolean).join(' · ')) + S(f.funding.src) : '')}
       ${row('סימול', esc(p.ticker || ''))}${row('שווי שוק', esc(p.market_cap || ''))}${row('הון עצמי', esc(p.equity || ''))}
       ${row('מכפיל הון', esc(p.p_to_book ?? ''))}${row('מחזור מסחר יומי', esc(p.avg_daily_turnover || ''))}
       ${row('בעל שליטה', esc([p.controlling_holder, p.holder_stake].filter(Boolean).join(' – ')))}
+      ${row('מקור נתוני שוק', S(p.src))}
       ${row('הערכת שווי', f.valuation_estimate?.range ? esc(f.valuation_estimate.range) + basis('estimate') + '<br><span style="color:var(--muted);font-size:13px">' + esc(f.valuation_estimate.method || '') + '</span>' : '')}
     </dl>
     ${(c.risks || []).length ? `<h3>סיכונים</h3><ul class="clean">${c.risks.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     ${(c.next_steps || []).length ? `<h3>צעדים הבאים</h3><ul class="clean">${c.next_steps.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
-    <h3>מקורות</h3><ul class="clean src">${(c.sources || []).map(x => `<li>${esc(x.title || '')}${x.date ? ' (' + esc(x.date) + ')' : ''} ${safeUrl(x.url) ? '– ' + link(x.url) : ''}</li>`).join('') || '<li>—</li>'}</ul>
+    <h3>כל המקורות (${(c.sources || []).length})</h3><ol class="src">${(c.sources || []).map(x => `<li>${esc(x.title || '')}${x.date ? ' (' + esc(x.date) + ')' : ''} ${safeUrl(x.url) ? '– ' + link(x.url) : ''}</li>`).join('') || '<li>—</li>'}</ol>
     <p style="color:var(--muted);font-size:12px;margin-top:20px">נמצא לראשונה ${esc(c.first_seen || '')} · עודכן ${esc(c.updated || '')}</p>`;
   $('#drawer').classList.remove('hidden');
   const save = () => { MINE[id] = { status:$('#mstatus').value, note:$('#mnote').value }; store.set('mine', MINE); render(); };
@@ -345,6 +390,12 @@ $('#exportbtn').onclick = () => {
   a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv;charset=utf-8' }));
   a.download = 'deal-radar.csv'; a.click();
 };
+// app install (PWA)
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (ios && !standalone && !store.get('tipdone', false)) $('#installtip').classList.remove('hidden');
+$('#tipclose').onclick = () => { $('#installtip').classList.add('hidden'); store.set('tipdone', true); };
 })();
 </script>
 </body>
